@@ -47,10 +47,10 @@ dashboard/
    | **Production branch** | `main` |
    | **Framework preset** | `None` |
    | **Build command** | `npm run build:css` |
-   | **Build output directory** | `public` |
-   | **Root directory** | `/` |
+   | **Build output directory** (或 **Output directory** 或 **Path**) | `public` |
+   | **Root directory** | `/` (留空) |
 
-6. **不要**配置 "Deploy command" - 留空，让Cloudflare自动处理
+6. **重要：** 如果看到 "Deploy command" 或类似字段，**必须删除或留空**
 
 7. 点击 `Save and Deploy`
 
