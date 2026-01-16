@@ -50,9 +50,15 @@ dashboard/
    | **Build output directory** | `public` |
    | **Root directory** | `/` |
 
-6. 点击 `Save and Deploy`
+6. **不要**配置 "Deploy command" - 留空，让Cloudflare自动处理
 
-**⚠️ 重要：** Cloudflare Pages会自动检测 `functions/` 目录中的Functions，无需额外配置。
+7. 点击 `Save and Deploy`
+
+**⚠️ 重要：** 
+- Cloudflare Pages会自动检测 `functions/` 目录中的Functions
+- **不需要** `wrangler.toml` 文件
+- **不需要**手动运行 `wrangler deploy`
+- Cloudflare会自动部署静态文件到 `public/` 和Functions到 `functions/`
 
 #### B. 配置环境变量
 
@@ -229,19 +235,24 @@ wrangler pages dev public --compatibility-date=2024-01-01
 ```bash
 # 提交代码到GitHub
 git add .
-git commit -m "Add Cloudflare Pages support"
+git commit -m "Update dashboard"
 git push github main
 ```
 
-Cloudflare会自动检测到推送并开始构建。
+Cloudflare Pages会自动检测到推送并开始构建部署。
 
-#### 方式B：使用Wrangler手动部署
+**⚠️ 注意：** 不要在Cloudflare Dashboard中配置 "Deploy command"，留空即可。
+
+#### 方式B：使用Wrangler手动部署（本地测试用）
 
 ```bash
-# 构建前端
+# 安装Wrangler
+npm install -g wrangler
+
+# 构建CSS
 npm run build:css
 
-# 部署
+# 部署（仅用于测试）
 wrangler pages deploy public --project-name=dashboard
 ```
 
