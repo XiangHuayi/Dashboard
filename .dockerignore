@@ -1,0 +1,13 @@
+# .dockerignore
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+*.md
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBOPS Deployment Frequency Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🚀 OBOPS Deployment Frequency Dashboard</h1>
+            <p>Deployment Frequency 统计分析</p>
+        </header>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="pipelineSelect">选择Pipeline:</label>
+                <select id="pipelineSelect">
+                    <option value="">加载中...</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="timeRange">时间范围:</label>
+                <select id="timeRange">
+                    <option value="7">过去7天</option>
+                    <option value="15">过去15天</option>
+                    <option value="30" selected>过去30天</option>
+                    <option value="60">过去60天</option>
+                    <option value="90">过去90天</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="chartType">图表类型:</label>
+                <select id="chartType">
+                    <option value="daily">按日统计</option>
+                    <option value="hourly">按小时统计</option>
+                    <option value="success-rate">成功率分析</option>
+                </select>
+            </div>
+
+            <button id="refreshBtn" class="refresh-btn">🔄 刷新数据</button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3 id="totalRuns">-</h3>
+                    <p>总运行次数</p>
+                </div>
+            </div>
+            
+            <div class="stat-card success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <h3 id="successRuns">-</h3>
+                    <p>成功次数</p>
+                </div>
+            </div>
+            
+            <div class="stat-card failure">
+                <div class="stat-icon">❌</div>
+                <div class="stat-content">
+                    <h3 id="failureRuns">-</h3>
+                    <p>失败次数</p>
+                </div>
+            </div>
+            
+            <div class="stat-card rate">
+                <div class="stat-icon">📈</div>
+                <div class="stat-content">
+                    <h3 id="successRate">-</h3>
+                    <p>成功率</p>
+                </div>
+            </div>
+            
+            <div class="stat-card frequency">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                    <h3 id="deployFrequency">-</h3>
+                    <p>部署频率 (次/天)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主图表区域 -->
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <!-- 详细信息区域 -->
+        <div class="details-section">
+            <h2>最近运行记录</h2>
+            <div class="table-container">
+                <table id="runsTable">
+                    <thead>
+                        <tr>
+                            <th>运行ID</th>
+                            <th>名称</th>
+                            <th>状态</th>
+                            <th>结果</th>
+                            <th>开始时间</th>
+                            <th>完成时间</th>
+                            <th>持续时间</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 加载指示器 -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>加载数据中...</p>
+        </div>
+
+        <!-- 错误消息 -->
+        <div id="errorMessage" class="error-message" style="display: none;">
+            <h3>❌ 加载失败</h3>
+            <p id="errorText"></p>
+            <button onclick="loadData()">重试</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

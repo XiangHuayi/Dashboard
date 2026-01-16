@@ -1,0 +1,35 @@
+{
+  "name": "pipeline-dashboard",
+  "version": "1.0.0",
+  "description": "Azure DevOps Pipeline Statistics Dashboard",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npm run build:css && nodemon server.js",
+    "build:css": "sass public/style.scss public/style.css",
+    "watch:css": "sass --watch public/style.scss:public/style.css",
+    "prestart": "npm run build:css"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "sass": "^1.97.2"
+  },
+  "keywords": [
+    "azure-devops",
+    "pipeline",
+    "dashboard",
+    "statistics"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
