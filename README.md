@@ -33,6 +33,13 @@ npm install
 cp .env.example .env
 ```
 
+**⚠️ 安全提示：**
+- **绝不要提交 `.env` 文件到Git/GitHub**
+- `.env` 已在 `.gitignore` 中，确保不会被意外提交
+- 使用 `.env.example` 作为配置模板
+- 在GitHub中使用 **Secrets** 来存储敏感信息
+- 在Azure中使用 **Application Settings** 来配置环境变量
+
 ### 3. 启动服务器
 
 ```bash
