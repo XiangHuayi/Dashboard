@@ -84,15 +84,45 @@ PIPELINE_LIST=8857:sesam.modules.backend-apigateway,8892:sesam.alarmservice.back
 
 ```
 pipeline-dashboard/
-├── public/           # 静态文件
+├── public/           # 静态文件（Cloudflare Pages部署目录）
 │   ├── index.html   # 主页面
 │   ├── style.scss   # SCSS样式源文件
 │   ├── style.css    # 编译后的CSS文件（自动生成）
 │   └── app.js       # 前端逻辑
-├── server.js        # 后端服务器
-├── .env             # 环境变量配置
+├── functions/       # Cloudflare Pages Functions (API端点)
+│   └── api/
+│       ├── pipelines.js      # /api/pipelines
+│       ├── pipeline-runs.js  # /api/pipeline-runs
+│       └── health.js         # /api/health
+├── server.js        # Node.js后端服务器（本地/Azure部署）
+├── .env             # 环境变量配置（本地开发）
+├── .dev.vars        # Cloudflare本地环境变量
 ├── package.json     # 项目依赖
 └── README.md        # 说明文档
+```
+
+## 部署选项
+
+### 🌐 Cloudflare Pages（推荐）
+完整部署指南请查看 [CLOUDFLARE_DEPLOY.md](CLOUDFLARE_DEPLOY.md)
+
+```bash
+# 安装Wrangler CLI
+npm install -g wrangler
+
+# 本地测试Cloudflare Functions
+npm run pages:dev
+
+# 部署到Cloudflare Pages
+npm run pages:deploy
+```
+
+### ☁️ Azure App Service
+部署指南请查看 [DEPLOYMENT.md](DEPLOYMENT.md)
+
+### 🔧 本地Node.js服务器
+```bash
+npm start
 ```
 
 ## 开发说明

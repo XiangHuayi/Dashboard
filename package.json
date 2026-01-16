@@ -12,7 +12,9 @@
     "dev": "npm run build:css && nodemon server.js",
     "build:css": "sass public/style.scss public/style.css",
     "watch:css": "sass --watch public/style.scss:public/style.css",
-    "prestart": "npm run build:css"
+    "prestart": "npm run build:css",
+    "pages:dev": "wrangler pages dev public --compatibility-date=2024-01-01",
+    "pages:deploy": "npm run build:css && wrangler pages deploy public"
   },
   "dependencies": {
     "axios": "^1.6.0",
