@@ -1,4 +1,4 @@
-# Azure DevOps Pipeline for Dashboard Deployment
+# Azure DevOps Pipeline for Dashboard Build and Package
 trigger:
   branches:
     include:
@@ -14,7 +14,7 @@ variables:
 
 stages:
   - stage: Build
-    displayName: 'Build Application'
+    displayName: 'Build and Package Application'
     jobs:
       - job: BuildJob
         displayName: 'Build Node.js Application'
@@ -34,6 +34,12 @@ stages:
               npm run build:css
             displayName: 'Build CSS from SCSS'
 
+          - script: |
+              echo "Running tests (if available)..."
+              npm test --if-present
+            displayName: 'Run Tests'
+            continueOnError: true
+
           - task: ArchiveFiles@2
             displayName: 'Archive Application Files'
             inputs:
@@ -45,30 +51,33 @@ stages:
               verbose: true
 
           - task: PublishBuildArtifacts@1
-            displayName: 'Publish Artifact'
+            displayName: 'Publish Build Artifact'
             inputs:
               PathtoPublish: '$(Build.ArtifactStagingDirectory)'
               ArtifactName: 'drop'
               publishLocation: 'Container'
 
-  - stage: Deploy
-    displayName: 'Deploy to Azure Web App'
-    dependsOn: Build
-    condition: succeeded()
-    jobs:
-      - deployment: DeployWeb
-        displayName: 'Deploy to Azure App Service'
-        environment: 'production'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - task: AzureWebApp@1
-                  displayName: 'Deploy Azure Web App'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    appType: 'webAppLinux'
-                    appName: '$(webAppName)'
-                    package: '$(Pipeline.Workspace)/drop/dashboard-$(Build.BuildId).zip'
-                    runtimeStack: 'NODE|18-lts'
-                    startUpCommand: 'npm start'
+  # 部署阶段 - 需要配置Azure服务连接后启用
+  # 取消注释以下代码并配置变量后可自动部署到Azure App Service
+  #
+  # - stage: Deploy
+  #   displayName: 'Deploy to Azure Web App'
+  #   dependsOn: Build
+  #   condition: succeeded()
+  #   jobs:
+  #     - deployment: DeployWeb
+  #       displayName: 'Deploy to Azure App Service'
+  #       environment: 'production'
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - task: AzureWebApp@1
+  #                 displayName: 'Deploy Azure Web App'
+  #                 inputs:
+  #                   azureSubscription: 'YOUR_AZURE_SERVICE_CONNECTION_NAME'
+  #                   appType: 'webAppLinux'
+  #                   appName: 'YOUR_WEB_APP_NAME'
+  #                   package: '$(Pipeline.Workspace)/drop/dashboard-$(Build.BuildId).zip'
+  #                   runtimeStack: 'NODE|18-lts'
+  #                   startUpCommand: 'npm start'
