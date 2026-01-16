@@ -45,11 +45,14 @@ dashboard/
    | 设置项 | 值 |
    |-------|---|
    | **Production branch** | `main` |
+   | **Framework preset** | `None` |
    | **Build command** | `npm run build:css` |
    | **Build output directory** | `public` |
    | **Root directory** | `/` |
 
 6. 点击 `Save and Deploy`
+
+**⚠️ 重要：** Cloudflare Pages会自动检测 `functions/` 目录中的Functions，无需额外配置。
 
 #### B. 配置环境变量
 
