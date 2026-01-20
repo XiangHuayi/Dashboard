@@ -150,6 +150,264 @@ app.get('/api/pipelines', (req, res) => {
     });
 });
 
+// 获取 Unit Test Code Coverage 数据
+app.get('/api/unit-test-coverage', async (req, res) => {
+    const unitTestPipelines = process.env.PIPELINE_UNIT_TEST ? 
+        process.env.PIPELINE_UNIT_TEST.split(',').map(item => {
+            const [id, name] = item.split(':');
+            return { id: id.trim(), name: name.trim() };
+        }) : [];
+
+    if (unitTestPipelines.length === 0) {
+        return res.json({
+            success: true,
+            data: [],
+            message: 'No unit test pipelines configured'
+        });
+    }
+
+    try {
+        const coverageData = await Promise.all(unitTestPipelines.map(async (pipeline) => {
+            try {
+                // 获取最新的 build
+                const runsResponse = await axios.get(
+                    `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/pipelines/${pipeline.id}/runs?api-version=7.1&$top=1`,
+                    {
+                        headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+                    }
+                );
+
+                if (!runsResponse.data.value || runsResponse.data.value.length === 0) {
+                    return {
+                        pipelineId: pipeline.id,
+                        pipelineName: pipeline.name,
+                        error: 'No runs found'
+                    };
+                }
+
+                const latestRun = runsResponse.data.value[0];
+                const buildId = latestRun.id;
+
+                // 获取项目 ID
+                const projectResponse = await axios.get(
+                    `https://dev.azure.com/${AZURE_CONFIG.org}/_apis/projects/${AZURE_CONFIG.project}?api-version=7.1`,
+                    {
+                        headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+                    }
+                );
+                const projectId = projectResponse.data.id;
+
+                // 获取代码覆盖率
+                const coverageResponse = await axios.get(
+                    `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/test/codecoverage?buildId=${buildId}&api-version=7.1-preview.1`,
+                    {
+                        headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+                    }
+                );
+
+                let coveragePercentage = 0;
+                let linesCovered = 0;
+                let linesTotal = 0;
+
+                if (coverageResponse.data.coverageData && coverageResponse.data.coverageData.length > 0) {
+                    const coverageStats = coverageResponse.data.coverageData[0].coverageStats || [];
+                    const lineCoverage = coverageStats.find(stat => stat.label === 'Lines');
+                    
+                    if (lineCoverage) {
+                        linesCovered = lineCoverage.covered || 0;
+                        linesTotal = lineCoverage.total || 0;
+                        if (linesTotal > 0) {
+                            coveragePercentage = ((linesCovered / linesTotal) * 100).toFixed(2);
+                        }
+                    }
+                }
+
+                return {
+                    pipelineId: pipeline.id,
+                    pipelineName: pipeline.name,
+                    buildId: buildId,
+                    buildNumber: latestRun.name,
+                    buildDate: latestRun.createdDate,
+                    buildResult: latestRun.result,
+                    coverage: {
+                        percentage: parseFloat(coveragePercentage),
+                        linesCovered: linesCovered,
+                        linesTotal: linesTotal
+                    },
+                    links: {
+                        coverage: `https://dev.azure.com/${AZURE_CONFIG.org}/${projectId}/_build/results?buildId=${buildId}&view=codecoverage-tab`,
+                        tests: `https://dev.azure.com/${AZURE_CONFIG.org}/${projectId}/_build/results?buildId=${buildId}&view=ms.vss-test-web.build-test-results-tab`
+                    }
+                };
+            } catch (error) {
+                console.error(`Error fetching coverage for pipeline ${pipeline.id}:`, error.message);
+                return {
+                    pipelineId: pipeline.id,
+                    pipelineName: pipeline.name,
+                    error: error.message
+                };
+            }
+        }));
+
+        res.json({
+            success: true,
+            data: coverageData
+        });
+    } catch (error) {
+        console.error('Error fetching unit test coverage:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch unit test coverage',
+            details: error.message
+        });
+    }
+});
+
+// 测试获取 Code Coverage 端点
+app.get('/api/test-coverage', async (req, res) => {
+    const unitTestPipelines = process.env.PIPELINE_UNIT_TEST ? 
+        process.env.PIPELINE_UNIT_TEST.split(',').map(item => {
+            const [id, name] = item.split(':');
+            return { id: id.trim(), name: name.trim() };
+        }) : [];
+
+    console.log('\n========== Testing Code Coverage API ==========');
+    console.log('Unit Test Pipelines:', unitTestPipelines);
+
+    const results = [];
+
+    for (const pipeline of unitTestPipelines) {
+        console.log(`\n--- Testing pipeline ${pipeline.id}: ${pipeline.name} ---`);
+        const pipelineResult = {
+            pipelineId: pipeline.id,
+            pipelineName: pipeline.name,
+            tests: []
+        };
+
+        try {
+            // 步骤1: 获取最新的 build
+            const runsUrl = `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/pipelines/${pipeline.id}/runs?api-version=7.1&$top=1`;
+            console.log(`1. Fetching latest run from: ${runsUrl}`);
+            
+            const runsResponse = await axios.get(runsUrl, {
+                headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+            });
+
+            if (!runsResponse.data.value || runsResponse.data.value.length === 0) {
+                pipelineResult.error = 'No runs found';
+                console.log('   ❌ No runs found');
+                results.push(pipelineResult);
+                continue;
+            }
+
+            const latestRun = runsResponse.data.value[0];
+            const buildId = latestRun.id;
+            pipelineResult.buildId = buildId;
+            pipelineResult.buildNumber = latestRun.name;
+            console.log(`   ✓ Latest build: ${buildId} (${latestRun.name})`);
+
+            // 步骤2: 获取项目 ID
+            const projectUrl = `https://dev.azure.com/${AZURE_CONFIG.org}/_apis/projects/${AZURE_CONFIG.project}?api-version=7.1`;
+            console.log(`2. Fetching project ID from: ${projectUrl}`);
+            
+            const projectResponse = await axios.get(projectUrl, {
+                headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+            });
+            
+            const projectId = projectResponse.data.id;
+            pipelineResult.projectId = projectId;
+            console.log(`   ✓ Project ID: ${projectId}`);
+
+            // 步骤3: 尝试多种方法获取 Code Coverage
+            
+            // 方法1: Test API - codecoverage
+            console.log(`3. Testing Code Coverage APIs...`);
+            const testMethod1 = {
+                name: 'Test API - codecoverage',
+                url: `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/test/codecoverage?buildId=${buildId}&api-version=7.1-preview.1`,
+                success: false
+            };
+            
+            try {
+                console.log(`   Trying: ${testMethod1.url}`);
+                const response = await axios.get(testMethod1.url, {
+                    headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+                });
+                testMethod1.success = true;
+                testMethod1.data = response.data;
+                console.log(`   ✓ SUCCESS! Response:`, JSON.stringify(response.data, null, 2));
+            } catch (error) {
+                testMethod1.error = `${error.response?.status || 'ERROR'}: ${error.message}`;
+                console.log(`   ❌ Failed: ${testMethod1.error}`);
+            }
+            pipelineResult.tests.push(testMethod1);
+
+            // 方法2: Build API - coverage
+            const testMethod2 = {
+                name: 'Build API - code coverage',
+                url: `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/build/builds/${buildId}/coverage?api-version=7.1`,
+                success: false
+            };
+            
+            try {
+                console.log(`   Trying: ${testMethod2.url}`);
+                const response = await axios.get(testMethod2.url, {
+                    headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+                });
+                testMethod2.success = true;
+                testMethod2.data = response.data;
+                console.log(`   ✓ SUCCESS! Response:`, JSON.stringify(response.data, null, 2));
+            } catch (error) {
+                testMethod2.error = `${error.response?.status || 'ERROR'}: ${error.message}`;
+                console.log(`   ❌ Failed: ${testMethod2.error}`);
+            }
+            pipelineResult.tests.push(testMethod2);
+
+            // 方法3: Test Results
+            const testMethod3 = {
+                name: 'Test Results API',
+                url: `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/test/runs?buildIds=${buildId}&api-version=7.1`,
+                success: false
+            };
+            
+            try {
+                console.log(`   Trying: ${testMethod3.url}`);
+                const response = await axios.get(testMethod3.url, {
+                    headers: { 'Authorization': `Bearer ${AZURE_CONFIG.token}` }
+                });
+                testMethod3.success = true;
+                testMethod3.data = response.data;
+                console.log(`   ✓ SUCCESS! Found ${response.data.count} test runs`);
+            } catch (error) {
+                testMethod3.error = `${error.response?.status || 'ERROR'}: ${error.message}`;
+                console.log(`   ❌ Failed: ${testMethod3.error}`);
+            }
+            pipelineResult.tests.push(testMethod3);
+
+            // 生成链接
+            pipelineResult.links = {
+                coverage: `https://dev.azure.com/${AZURE_CONFIG.org}/${projectId}/_build/results?buildId=${buildId}&view=codecoverage-tab`,
+                tests: `https://dev.azure.com/${AZURE_CONFIG.org}/${projectId}/_build/results?buildId=${buildId}&view=ms.vss-test-web.build-test-results-tab`,
+                buildDetails: `https://dev.azure.com/${AZURE_CONFIG.org}/${projectId}/_build/results?buildId=${buildId}`
+            };
+
+        } catch (error) {
+            pipelineResult.error = error.message;
+            console.log(`   ❌ Error: ${error.message}`);
+        }
+
+        results.push(pipelineResult);
+    }
+
+    console.log('\n========== Test Complete ==========\n');
+
+    res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        results: results
+    });
+});
+
 // 健康检查端点
 app.get('/api/health', (req, res) => {
     res.json({

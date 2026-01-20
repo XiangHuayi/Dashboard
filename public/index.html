@@ -12,12 +12,19 @@
     <div class="container">
         <!-- 头部 -->
         <header class="header">
-            <h1>🚀 OBOPS Deployment Frequency Dashboard</h1>
-            <p>Deployment Frequency 统计分析</p>
+            <h1>🚀 OBOPS SESAM Dashboard</h1>
         </header>
 
-        <!-- 控制面板 -->
-        <div class="controls">
+        <!-- 导航栏 -->
+        <nav class="navigation">
+            <button class="nav-btn active" data-view="statistics">📊 Deployment Frequency 统计分析</button>
+            <button class="nav-btn" data-view="coverage">🧪 Code Coverage</button>
+        </nav>
+
+        <!-- 统计数据视图 -->
+        <div id="statisticsView" class="view-container active">
+            <!-- 控制面板 -->
+            <div class="controls">
             <div class="control-group">
                 <label for="pipelineSelect">选择Pipeline:</label>
                 <select id="pipelineSelect">
@@ -114,6 +121,18 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+        </div>
+
+        <!-- Code Coverage 视图 -->
+        <div id="coverageView" class="view-container">
+            <div class="coverage-header">
+                <h2>🧪 Unit Test Code Coverage</h2>
+                <button id="refreshCoverageBtn" class="refresh-btn">🔄 刷新</button>
+            </div>
+            <div id="coverageCards" class="coverage-grid">
+                <!-- 动态生成的 coverage 卡片 -->
             </div>
         </div>
 

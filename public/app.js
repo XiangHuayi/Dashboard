@@ -1,12 +1,14 @@
 // 全局变量
 let currentChart = null;
 let currentData = null;
+let currentView = 'statistics';
 
 // DOM元素
 const pipelineSelect = document.getElementById('pipelineSelect');
 const timeRangeSelect = document.getElementById('timeRange');
 const chartTypeSelect = document.getElementById('chartType');
 const refreshBtn = document.getElementById('refreshBtn');
+const refreshCoverageBtn = document.getElementById('refreshCoverageBtn');
 const loadingIndicator = document.getElementById('loading');
 const errorMessage = document.getElementById('errorMessage');
 const errorText = document.getElementById('errorText');
@@ -21,13 +23,56 @@ const deployFrequencyEl = document.getElementById('deployFrequency');
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    setupNavigation();
     loadPipelines();
 });
+
+// 设置导航
+function setupNavigation() {
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            switchView(view);
+        });
+    });
+}
+
+// 切换视图
+function switchView(view) {
+    currentView = view;
+    
+    // 更新导航按钮状态
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // 切换视图容器
+    const statisticsView = document.getElementById('statisticsView');
+    const coverageView = document.getElementById('coverageView');
+    
+    if (view === 'statistics') {
+        statisticsView.classList.add('active');
+        coverageView.classList.remove('active');
+    } else if (view === 'coverage') {
+        statisticsView.classList.remove('active');
+        coverageView.classList.add('active');
+        loadCoverageData();
+    }
+}
 
 // 设置事件监听器
 function setupEventListeners() {
     pipelineSelect.addEventListener('change', loadData);
     timeRangeSelect.addEventListener('change', loadData);
+    refreshBtn.addEventListener('click', loadData);
+    if (refreshCoverageBtn) {
+        refreshCoverageBtn.addEventListener('click', loadCoverageData);
+    }
     chartTypeSelect.addEventListener('change', updateChart);
     refreshBtn.addEventListener('click', loadData);
 }
@@ -386,4 +431,112 @@ function showError(message) {
 
 function hideError() {
     errorMessage.style.display = 'none';
+}
+
+// 加载 Code Coverage 数据
+async function loadCoverageData() {
+    try {
+        showLoading(true);
+        hideError();
+        
+        const response = await fetch('/api/unit-test-coverage');
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || '获取 Coverage 数据失败');
+        }
+        
+        updateCoverageCards(result.data);
+    } catch (error) {
+        console.error('Error loading coverage data:', error);
+        showError('加载 Coverage 数据失败: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// 更新 Coverage 卡片
+function updateCoverageCards(data) {
+    const container = document.getElementById('coverageCards');
+    container.innerHTML = '';
+    
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="no-data">暂无 Unit Test Pipeline 配置</div>';
+        return;
+    }
+    
+    data.forEach(pipeline => {
+        const card = document.createElement('div');
+        card.className = 'coverage-card';
+        
+        if (pipeline.error) {
+            card.innerHTML = `
+                <div class="coverage-card-header">
+                    <h3>${pipeline.pipelineName}</h3>
+                    <span class="pipeline-id">#${pipeline.pipelineId}</span>
+                </div>
+                <div class="error-info">
+                    <p>⚠️ ${pipeline.error}</p>
+                </div>
+            `;
+        } else {
+            const coverageClass = getCoverageClass(pipeline.coverage.percentage);
+            const resultClass = pipeline.buildResult === 'succeeded' ? 'success' : 'failure';
+            
+            card.innerHTML = `
+                <div class="coverage-card-header">
+                    <h3>${pipeline.pipelineName}</h3>
+                    <span class="pipeline-id">#${pipeline.pipelineId}</span>
+                </div>
+                
+                <div class="build-info">
+                    <div class="build-status ${resultClass}">
+                        ${pipeline.buildResult === 'succeeded' ? '✅' : '❌'} Build ${pipeline.buildNumber}
+                    </div>
+                    <div class="build-date">${formatDateTime(new Date(pipeline.buildDate))}</div>
+                </div>
+                
+                <div class="coverage-display">
+                    <div class="coverage-circle ${coverageClass}">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg"
+                                d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path class="circle"
+                                stroke-dasharray="${pipeline.coverage.percentage}, 100"
+                                d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <text x="18" y="20.35" class="percentage">${pipeline.coverage.percentage}%</text>
+                        </svg>
+                    </div>
+                    <div class="coverage-stats">
+                        <p class="coverage-label">Code Coverage</p>
+                        <p class="coverage-numbers">${pipeline.coverage.linesCovered} / ${pipeline.coverage.linesTotal} lines</p>
+                    </div>
+                </div>
+                
+                <div class="coverage-actions">
+                    <a href="${pipeline.links.coverage}" target="_blank" class="action-link coverage-link">
+                        📊 View Coverage Report
+                    </a>
+                    <a href="${pipeline.links.tests}" target="_blank" class="action-link tests-link">
+                        🧪 View Test Results
+                    </a>
+                </div>
+            `;
+        }
+        
+        container.appendChild(card);
+    });
+}
+
+// 获取覆盖率等级样式
+function getCoverageClass(percentage) {
+    if (percentage >= 80) return 'high';
+    if (percentage >= 60) return 'medium';
+    return 'low';
 }
