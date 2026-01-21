@@ -150,6 +150,269 @@ app.get('/api/pipelines', (req, res) => {
     });
 });
 
+// 获取配置端点
+app.get('/api/config', (req, res) => {
+    // 解析多个 repository
+    const repositories = process.env.REPOSITORY_ID ? 
+        process.env.REPOSITORY_ID.split(',').map(item => {
+            const [id, name] = item.split(':');
+            return { id: id.trim(), name: name.trim() };
+        }) : [];
+    
+    res.json({
+        success: true,
+        data: {
+            repositories: repositories,
+            // 为了向后兼容，保留 repositoryId 字段（第一个 repository）
+            repositoryId: repositories.length > 0 ? `${repositories[0].id}:${repositories[0].name}` : ''
+        }
+    });
+});
+
+// 获取 Lead Time for Changes 数据
+app.get('/api/lead-time', async (req, res) => {
+    try {
+        const { days = 30, repositoryId } = req.query;
+        const targetUser = req.query.targetUser || 'jzhouk1@jci.com';
+        const repoId = repositoryId || process.env.REPOSITORY_ID;
+        
+        if (!repoId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Repository ID is required'
+            });
+        }
+
+        // 解析 repository ID 和 name
+        const [id, name] = repoId.includes(':') 
+            ? repoId.split(':') 
+            : [repoId, 'Repository'];
+        
+        // 获取 Pull Requests
+        const prUrl = `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/git/repositories/${id.trim()}/pullrequests?searchCriteria.status=completed&api-version=7.2-preview.2`;
+        
+        const response = await axios.get(prUrl, {
+            headers: {
+                'Authorization': `Bearer ${AZURE_CONFIG.token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        // 过滤指定天数内的 PR
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+        
+        const recentPRs = response.data.value.filter(pr => 
+            pr.closedDate && new Date(pr.closedDate) >= cutoffDate
+        );
+        
+        // 计算 Lead Time 统计
+        const leadTimeData = calculateDeploymentLeadTime(recentPRs, targetUser);
+        
+        res.json({
+            success: true,
+            data: {
+                repository: {
+                    id: id.trim(),
+                    name: name.trim()
+                },
+                targetUser: targetUser,
+                statistics: leadTimeData.statistics,
+                cycles: leadTimeData.cycles,
+                dailyStats: leadTimeData.dailyStats
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching lead time data:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch lead time data',
+            details: error.message
+        });
+    }
+});
+
+function calculateDeploymentLeadTime(prs, targetUser) {
+    // 按关闭时间排序（从旧到新）
+    const sortedPRs = prs.sort((a, b) => 
+        new Date(a.closedDate) - new Date(b.closedDate)
+    );
+    
+    // 提取所有 PR 的基本信息
+    const allPRs = sortedPRs.map(pr => ({
+        id: pr.pullRequestId,
+        title: pr.title,
+        createdBy: pr.createdBy.displayName,
+        uniqueName: pr.createdBy.uniqueName,
+        createdDate: new Date(pr.creationDate),
+        closedDate: new Date(pr.closedDate),
+        isTargetUser: pr.createdBy.uniqueName === targetUser
+    }));
+    
+    // 找出所有目标用户的 PR
+    const targetUserPRs = allPRs.filter(pr => pr.isTargetUser);
+    
+    // 计算部署周期
+    const cycles = [];
+    
+  // 新逻辑：
+  // 1. 周期结束于 Kai Zhou 的 PR
+  // 2. 下一个周期从 Kai Zhou PR 之后的第一个其他人的 PR 开始
+  // 3. 如果 Kai Zhou PR 后面连续是 Kai Zhou 的 PR，跳过直到找到其他人的 PR
+  
+  console.log('===== 开始计算周期 =====');
+  console.log(`总 PR 数: ${allPRs.length}, Kai Zhou PR 数: ${targetUserPRs.length}`);
+  console.log('PR 列表:');
+  allPRs.forEach((pr, idx) => {
+    console.log(`  [${idx}] ${pr.isTargetUser ? '**KAI**' : pr.createdBy} - ${pr.title.substring(0, 30)}`);
+  });
+  
+  if (targetUserPRs.length > 0 && allPRs.length > 0) {
+    // 遍历每个 Kai Zhou 的 PR（作为周期结束点）
+    for (let i = 0; i < targetUserPRs.length; i++) {
+      console.log(`\n--- 处理第 ${i + 1} 个 Kai Zhou PR ---`);
+      const endPR = targetUserPRs[i];
+      const endPRIndex = allPRs.findIndex(pr => pr.id === endPR.id);
+      console.log(`  结束 PR [${endPRIndex}]: ${endPR.title.substring(0, 30)}`);
+      
+      // 找到这个 Kai Zhou PR 之后的第一个非 Kai Zhou PR（作为下一个周期的起始点）
+      let nextStartPR = null;
+      for (let j = endPRIndex + 1; j < allPRs.length; j++) {
+        if (!allPRs[j].isTargetUser) {
+          nextStartPR = allPRs[j];
+          break;
+        }
+      }
+      
+      // 如果这是第一个 Kai Zhou PR，需要找到它之前的起始点
+      let startPR = null;
+      if (i === 0) {
+        // 第一个周期：从第一个 PR（任何人）开始
+        startPR = allPRs[0];
+        console.log(`  第一个周期，起始 PR [0]: ${startPR.title.substring(0, 30)}`);
+      } else {
+        // 后续周期：从上一个 Kai Zhou PR 之后的第一个非 Kai Zhou PR 开始
+        const prevEndPRIndex = allPRs.findIndex(pr => pr.id === targetUserPRs[i - 1].id);
+        console.log(`  上一个 Kai Zhou PR [${prevEndPRIndex}]: ${targetUserPRs[i - 1].title.substring(0, 30)}`);
+        console.log(`  在 [${prevEndPRIndex + 1}] 到 [${endPRIndex - 1}] 之间寻找非 Kai Zhou PR...`);
+        
+        // 只在上一个 Kai Zhou PR 和当前 Kai Zhou PR 之间找起始点
+        for (let j = prevEndPRIndex + 1; j < endPRIndex; j++) {
+          console.log(`    检查 [${j}]: ${allPRs[j].isTargetUser ? 'Kai Zhou' : allPRs[j].createdBy} - ${allPRs[j].title.substring(0, 20)}`);
+          if (!allPRs[j].isTargetUser) {
+            startPR = allPRs[j];
+            console.log(`    ✓ 找到起始 PR [${j}]`);
+            break;
+          }
+        }
+        
+        if (!startPR) {
+          console.log(`    ✗ 中间没有非 Kai Zhou PR，跳过此周期（连续的 Kai Zhou PR）`);
+        }
+      }
+      
+      // 只有找到起始 PR 时才创建周期
+      if (startPR && startPR.id !== endPR.id) {
+        console.log(`  ✓ 创建周期: [${allPRs.indexOf(startPR)}] ${startPR.createdBy} -> [${endPRIndex}] Kai Zhou`);
+        const leadTimeMs = endPR.closedDate - startPR.closedDate;
+        const leadTimeHours = leadTimeMs / (1000 * 60 * 60);
+        const leadTimeDays = leadTimeHours / 24;
+        
+        const prsInCycle = allPRs.filter(pr => 
+          pr.closedDate >= startPR.closedDate && pr.closedDate <= endPR.closedDate
+        );
+        
+        cycles.push({
+          cycleNumber: cycles.length + 1,
+          startPR: {
+            id: startPR.id,
+            title: startPR.title,
+            createdBy: startPR.createdBy,
+            closedDate: startPR.closedDate.toISOString()
+          },
+          endPR: {
+            id: endPR.id,
+            title: endPR.title,
+            closedDate: endPR.closedDate.toISOString()
+          },
+          leadTimeMs,
+          leadTimeHours: Math.round(leadTimeHours * 100) / 100,
+          leadTimeDays: Math.round(leadTimeDays * 100) / 100,
+          totalPRsInCycle: prsInCycle.length,
+          prsInCycle: prsInCycle.map(pr => ({
+            id: pr.id,
+            title: pr.title,
+            createdBy: pr.createdBy,
+            closedDate: pr.closedDate.toISOString()
+          }))
+        });
+      }
+    }
+  }
+  
+  console.log(`\n===== 周期计算完成，总共 ${cycles.length} 个周期 =====\n`);
+  
+  // 计算统计数据
+  const totalCycles = cycles.length;
+  const leadTimes = cycles.map(c => c.leadTimeHours);
+  
+  const avgLeadTime = totalCycles > 0 
+    ? leadTimes.reduce((sum, val) => sum + val, 0) / totalCycles 
+    : 0;
+  
+  const sortedLeadTimes = [...leadTimes].sort((a, b) => a - b);
+  const medianLeadTime = totalCycles > 0
+    ? sortedLeadTimes[Math.floor(totalCycles / 2)]
+    : 0;
+  
+  const minLeadTime = totalCycles > 0 ? Math.min(...leadTimes) : 0;
+  const maxLeadTime = totalCycles > 0 ? Math.max(...leadTimes) : 0;
+  
+  // 按日期分组统计
+  const dailyStats = {};
+  cycles.forEach(cycle => {
+    const dateKey = cycle.endPR.closedDate.split('T')[0];
+    if (!dailyStats[dateKey]) {
+      dailyStats[dateKey] = {
+        count: 0,
+        totalLeadTime: 0,
+        avgLeadTime: 0,
+        cycles: []
+      };
+    }
+    dailyStats[dateKey].count++;
+    dailyStats[dateKey].totalLeadTime += cycle.leadTimeHours;
+    dailyStats[dateKey].cycles.push(cycle);
+  });
+  
+  // 计算每日平均值
+  Object.keys(dailyStats).forEach(date => {
+    dailyStats[date].avgLeadTime = 
+      Math.round((dailyStats[date].totalLeadTime / dailyStats[date].count) * 100) / 100;
+  });
+  
+  // 计算部署频率
+  const timeSpanDays = allPRs.length > 0 
+    ? (allPRs[allPRs.length - 1].closedDate - allPRs[0].closedDate) / (1000 * 60 * 60 * 24)
+    : 1;
+  
+  return {
+    statistics: {
+      totalCycles,
+      totalTargetUserPRs: targetUserPRs.length,
+      totalPRs: allPRs.length,
+      avgLeadTimeHours: Math.round(avgLeadTime * 100) / 100,
+      avgLeadTimeDays: Math.round((avgLeadTime / 24) * 100) / 100,
+      medianLeadTimeHours: Math.round(medianLeadTime * 100) / 100,
+      minLeadTimeHours: Math.round(minLeadTime * 100) / 100,
+      maxLeadTimeHours: Math.round(maxLeadTime * 100) / 100,
+      deploymentFrequency: Math.round((totalCycles / Math.max(timeSpanDays, 1)) * 100) / 100
+    },
+    cycles,
+    dailyStats
+  };
+}
+
 // 获取 Unit Test Code Coverage 数据
 app.get('/api/unit-test-coverage', async (req, res) => {
     const unitTestPipelines = process.env.PIPELINE_UNIT_TEST ? 
@@ -420,6 +683,119 @@ app.get('/api/health', (req, res) => {
             hasToken: !!AZURE_CONFIG.token
         }
     });
+});
+
+// Change Failure Rate API
+app.get('/api/change-failure-rate', async (req, res) => {
+    try {
+        const { days = 30 } = req.query;
+        const bugTagFilter = process.env.BUG_TAG_FILTER || 'Environment Change Failure';
+        const pipelineId = process.env.CHANGE_FAILURE_PIPELINE_ID || '8805';
+        
+        // Calculate date range
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD (date only)
+        
+        // Fetch bugs with the specific tag
+        const bugsUrl = `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/wit/wiql?api-version=7.1-preview.2`;
+        const wiqlQuery = {
+            query: `SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.Tags] CONTAINS '${bugTagFilter}' AND [System.CreatedDate] >= '${cutoffDateStr}' ORDER BY [System.CreatedDate] DESC`
+        };
+        
+        console.log('WIQL Query:', wiqlQuery.query);
+        
+        const bugsResponse = await axios.post(bugsUrl, wiqlQuery, {
+            headers: {
+                'Authorization': `Bearer ${AZURE_CONFIG.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const bugIds = bugsResponse.data.workItems ? bugsResponse.data.workItems.map(item => item.id) : [];
+        
+        // Fetch detailed bug information
+        let bugs = [];
+        if (bugIds.length > 0) {
+            const bugDetailsUrl = `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_apis/wit/workitems?ids=${bugIds.join(',')}&api-version=7.1`;
+            const bugDetailsResponse = await axios.get(bugDetailsUrl, {
+                headers: {
+                    'Authorization': `Bearer ${AZURE_CONFIG.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            bugs = bugDetailsResponse.data.value.map(bug => ({
+                id: bug.id,
+                title: bug.fields['System.Title'],
+                state: bug.fields['System.State'],
+                createdDate: bug.fields['System.CreatedDate'],
+                tags: bug.fields['System.Tags'] || '',
+                severity: bug.fields['Microsoft.VSTS.Common.Severity'] || 'Unassigned',
+                assignedTo: bug.fields['System.AssignedTo']?.displayName || 'Unassigned',
+                description: bug.fields['System.Description'] || '',
+                url: `https://dev.azure.com/${AZURE_CONFIG.org}/${AZURE_CONFIG.project}/_workitems/edit/${bug.id}`
+            }));
+        }
+        
+        // Fetch deployment count (pipeline runs)
+        const deploymentsUrl = buildAzureApiUrl(pipelineId, 1000);
+        const deploymentsResponse = await axios.get(deploymentsUrl, {
+            headers: {
+                'Authorization': `Bearer ${AZURE_CONFIG.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const allDeployments = deploymentsResponse.data.value;
+        const deployments = allDeployments.filter(run => {
+            const createdDate = new Date(run.createdDate);
+            return createdDate >= cutoffDate && run.result === 'succeeded';
+        });
+        
+        // Calculate Change Failure Rate
+        const totalBugs = bugs.length;
+        const totalDeployments = deployments.length;
+        const changeFailureRate = totalDeployments > 0 
+            ? ((totalBugs / totalDeployments) * 100).toFixed(2)
+            : 0;
+        
+        // Group bugs by severity
+        const bugsBySeverity = bugs.reduce((acc, bug) => {
+            const severity = bug.severity;
+            if (!acc[severity]) {
+                acc[severity] = [];
+            }
+            acc[severity].push(bug);
+            return acc;
+        }, {});
+        
+        res.json({
+            success: true,
+            data: {
+                statistics: {
+                    totalBugs,
+                    totalDeployments,
+                    changeFailureRate: parseFloat(changeFailureRate),
+                    period: `${days} days`
+                },
+                bugs,
+                bugsBySeverity,
+                deployments: deployments.slice(0, 20) // Recent 20 deployments
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching change failure rate:', error.message);
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+        }
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch change failure rate',
+            details: error.message
+        });
+    }
 });
 
 // 提供主页

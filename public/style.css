@@ -606,4 +606,194 @@ body {
   font-size: 16px;
 }
 
+.leadtime-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e9f6;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.leadtime-header h2 {
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  margin: 0;
+}
+.leadtime-header .leadtime-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.leadtime-header .leadtime-controls .control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.leadtime-header .leadtime-controls .control-group label {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.73);
+  font-weight: 500;
+}
+.leadtime-header .leadtime-controls select {
+  padding: 6px 12px;
+  border: 1px solid #e5e8ea;
+  border-radius: 16px;
+  background: #f7f8f8;
+  font-size: 14px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: rgba(0, 0, 0, 0.73);
+  min-width: 150px;
+}
+.leadtime-header .leadtime-controls select:hover {
+  background: #e5e8ea;
+}
+.leadtime-header .leadtime-controls select:focus {
+  border-color: #152ea9;
+  outline: none;
+  background: #ffffff;
+}
+
+.stat-card.info {
+  border-left: 4px solid #17a2b8;
+}
+
+#leadtimeTable tbody tr.leadtime-fast {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+#leadtimeTable tbody tr.leadtime-fast:hover td {
+  background-color: rgba(40, 167, 69, 0.2) !important;
+}
+#leadtimeTable tbody tr.leadtime-medium {
+  background-color: rgba(255, 193, 7, 0.1);
+}
+#leadtimeTable tbody tr.leadtime-medium:hover td {
+  background-color: rgba(255, 193, 7, 0.2) !important;
+}
+#leadtimeTable tbody tr.leadtime-slow {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+#leadtimeTable tbody tr.leadtime-slow:hover td {
+  background-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+.changefailure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.changefailure-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.changefailure-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.severity-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.severity-badge.severity-critical {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: rgb(189.2151898734, 32.7848101266, 47.7721518987);
+  border: 1px solid #dc3545;
+}
+.severity-badge.severity-high {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #a07800;
+  border: 1px solid #ffc107;
+}
+.severity-badge.severity-medium {
+  background-color: rgba(23, 162, 184, 0.2);
+  color: rgb(17.3333333333, 122.0869565217, 138.6666666667);
+  border: 1px solid #17a2b8;
+}
+.severity-badge.severity-low {
+  background-color: rgba(40, 167, 69, 0.2);
+  color: rgb(30.1449275362, 125.8550724638, 52);
+  border: 1px solid #28a745;
+}
+
+.state-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.state-badge.state-new, .state-badge.state-active {
+  background-color: rgba(23, 162, 184, 0.15);
+  color: rgb(14.5, 102.1304347826, 116);
+}
+.state-badge.state-resolved, .state-badge.state-closed {
+  background-color: rgba(40, 167, 69, 0.15);
+  color: rgb(25.2173913043, 105.2826086957, 43.5);
+}
+.state-badge.state-committed {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #a07800;
+}
+
+#bugsTable tbody tr.severity-critical {
+  background-color: rgba(220, 53, 69, 0.05);
+  border-left: 3px solid #dc3545;
+}
+#bugsTable tbody tr.severity-critical:hover td {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+}
+#bugsTable tbody tr.severity-high {
+  background-color: rgba(255, 193, 7, 0.05);
+  border-left: 3px solid #ffc107;
+}
+#bugsTable tbody tr.severity-high:hover td {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+#bugsTable tbody tr.severity-medium {
+  background-color: rgba(23, 162, 184, 0.05);
+  border-left: 3px solid #17a2b8;
+}
+#bugsTable tbody tr.severity-medium:hover td {
+  background-color: rgba(23, 162, 184, 0.1) !important;
+}
+#bugsTable tbody tr.severity-low {
+  background-color: rgba(40, 167, 69, 0.05);
+  border-left: 3px solid #28a745;
+}
+#bugsTable tbody tr.severity-low:hover td {
+  background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.view-link {
+  color: #152ea9;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.view-link:hover {
+  color: rgb(12.5447368421, 27.4789473684, 100.9552631579);
+  text-decoration: underline;
+}
+
 /*# sourceMappingURL=style.css.map */

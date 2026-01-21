@@ -710,3 +710,234 @@ body {
   color: $text-muted;
   font-size: 16px;
 }
+
+// Lead Time for Changes 视图样式
+.leadtime-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: $bg-white;
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow: $shadow-base;
+  border: 1px solid $border-light;
+  flex-wrap: wrap;
+  gap: 16px;
+  
+  h2 {
+    font-size: 20px;
+    font-weight: 500;
+    color: $text-primary;
+    margin: 0;
+  }
+  
+  .leadtime-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      label {
+        font-size: 14px;
+        color: $text-secondary;
+        font-weight: 500;
+      }
+    }
+    
+    select {
+      padding: 6px 12px;
+      border: 1px solid $border-color;
+      border-radius: 16px;
+      background: $bg-light;
+      font-size: 14px;
+      height: 32px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: $text-secondary;
+      min-width: 150px;
+      
+      &:hover {
+        background: $bg-hover;
+      }
+      
+      &:focus {
+        border-color: $primary-color;
+        outline: none;
+        background: $bg-white;
+      }
+    }
+  }
+}
+
+.stat-card.info {
+  border-left: 4px solid $info-color;
+}
+
+// Lead Time 表格行颜色
+#leadtimeTable {
+  tbody tr.leadtime-fast {
+    background-color: rgba($success-color, 0.1);
+    
+    &:hover td {
+      background-color: rgba($success-color, 0.2) !important;
+    }
+  }
+  
+  tbody tr.leadtime-medium {
+    background-color: rgba($warning-color, 0.1);
+    
+    &:hover td {
+      background-color: rgba($warning-color, 0.2) !important;
+    }
+  }
+  
+  tbody tr.leadtime-slow {
+    background-color: rgba($failure-color, 0.1);
+    
+    &:hover td {
+      background-color: rgba($failure-color, 0.2) !important;
+    }
+  }
+}
+
+// Change Failure Rate 视图样式
+.changefailure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: $bg-white;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    color: $text-primary;
+  }
+}
+
+.changefailure-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+// Bug severity badges
+.severity-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.severity-critical {
+    background-color: rgba($failure-color, 0.2);
+    color: darken($failure-color, 10%);
+    border: 1px solid $failure-color;
+  }
+
+  &.severity-high {
+    background-color: rgba($warning-color, 0.2);
+    color: darken($warning-color, 20%);
+    border: 1px solid $warning-color;
+  }
+
+  &.severity-medium {
+    background-color: rgba($info-color, 0.2);
+    color: darken($info-color, 10%);
+    border: 1px solid $info-color;
+  }
+
+  &.severity-low {
+    background-color: rgba($success-color, 0.2);
+    color: darken($success-color, 10%);
+    border: 1px solid $success-color;
+  }
+}
+
+// State badges
+.state-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.state-new,
+  &.state-active {
+    background-color: rgba($info-color, 0.15);
+    color: darken($info-color, 15%);
+  }
+
+  &.state-resolved,
+  &.state-closed {
+    background-color: rgba($success-color, 0.15);
+    color: darken($success-color, 15%);
+  }
+
+  &.state-committed {
+    background-color: rgba($warning-color, 0.15);
+    color: darken($warning-color, 20%);
+  }
+}
+
+// Bug table severity row coloring
+#bugsTable {
+  tbody tr.severity-critical {
+    background-color: rgba($failure-color, 0.05);
+    border-left: 3px solid $failure-color;
+
+    &:hover td {
+      background-color: rgba($failure-color, 0.1) !important;
+    }
+  }
+
+  tbody tr.severity-high {
+    background-color: rgba($warning-color, 0.05);
+    border-left: 3px solid $warning-color;
+
+    &:hover td {
+      background-color: rgba($warning-color, 0.1) !important;
+    }
+  }
+
+  tbody tr.severity-medium {
+    background-color: rgba($info-color, 0.05);
+    border-left: 3px solid $info-color;
+
+    &:hover td {
+      background-color: rgba($info-color, 0.1) !important;
+    }
+  }
+
+  tbody tr.severity-low {
+    background-color: rgba($success-color, 0.05);
+    border-left: 3px solid $success-color;
+
+    &:hover td {
+      background-color: rgba($success-color, 0.1) !important;
+    }
+  }
+}
+
+// View link styling
+.view-link {
+  color: $primary-color;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+  
+  &:hover {
+    color: darken($primary-color, 15%);
+    text-decoration: underline;
+  }
+}

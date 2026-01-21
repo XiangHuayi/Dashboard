@@ -1,9 +1,9 @@
-// 全局变量
+// Global variables
 let currentChart = null;
 let currentData = null;
 let currentView = 'statistics';
 
-// DOM元素
+// DOM elements
 const pipelineSelect = document.getElementById('pipelineSelect');
 const timeRangeSelect = document.getElementById('timeRange');
 const chartTypeSelect = document.getElementById('chartType');
@@ -13,21 +13,21 @@ const loadingIndicator = document.getElementById('loading');
 const errorMessage = document.getElementById('errorMessage');
 const errorText = document.getElementById('errorText');
 
-// 统计元素
+// Statistics elements
 const totalRunsEl = document.getElementById('totalRuns');
 const successRunsEl = document.getElementById('successRuns');
 const failureRunsEl = document.getElementById('failureRuns');
 const successRateEl = document.getElementById('successRate');
 const deployFrequencyEl = document.getElementById('deployFrequency');
 
-// 初始化
+// Initialization
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setupNavigation();
     loadPipelines();
 });
 
-// 设置导航
+// Setup navigation
 function setupNavigation() {
     const navBtns = document.querySelectorAll('.nav-btn');
     navBtns.forEach(btn => {
@@ -38,11 +38,11 @@ function setupNavigation() {
     });
 }
 
-// 切换视图
+// Switch view
 function switchView(view) {
     currentView = view;
     
-    // 更新导航按钮状态
+    // Update navigation button state
     document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.dataset.view === view) {
             btn.classList.add('active');
@@ -51,21 +51,39 @@ function switchView(view) {
         }
     });
     
-    // 切换视图容器
+    // Switch view container
     const statisticsView = document.getElementById('statisticsView');
     const coverageView = document.getElementById('coverageView');
+    const leadtimeView = document.getElementById('leadtimeView');
+    const changefailureView = document.getElementById('changefailureView');
     
     if (view === 'statistics') {
         statisticsView.classList.add('active');
         coverageView.classList.remove('active');
+        leadtimeView.classList.remove('active');
+        changefailureView.classList.remove('active');
     } else if (view === 'coverage') {
         statisticsView.classList.remove('active');
         coverageView.classList.add('active');
+        leadtimeView.classList.remove('active');
+        changefailureView.classList.remove('active');
         loadCoverageData();
+    } else if (view === 'leadtime') {
+        statisticsView.classList.remove('active');
+        coverageView.classList.remove('active');
+        leadtimeView.classList.add('active');
+        changefailureView.classList.remove('active');
+        loadLeadTimeData();
+    } else if (view === 'changefailure') {
+        statisticsView.classList.remove('active');
+        coverageView.classList.remove('active');
+        leadtimeView.classList.remove('active');
+        changefailureView.classList.add('active');
+        loadChangeFailureData();
     }
 }
 
-// 设置事件监听器
+// Setup event listeners
 function setupEventListeners() {
     pipelineSelect.addEventListener('change', loadData);
     timeRangeSelect.addEventListener('change', loadData);
@@ -74,10 +92,29 @@ function setupEventListeners() {
         refreshCoverageBtn.addEventListener('click', loadCoverageData);
     }
     chartTypeSelect.addEventListener('change', updateChart);
-    refreshBtn.addEventListener('click', loadData);
+    
+    // Lead Time event listeners
+    const leadtimeTimeRange = document.getElementById('leadtimeTimeRange');
+    const refreshLeadtimeBtn = document.getElementById('refreshLeadtimeBtn');
+    if (leadtimeTimeRange) {
+        leadtimeTimeRange.addEventListener('change', loadLeadTimeData);
+    }
+    if (refreshLeadtimeBtn) {
+        refreshLeadtimeBtn.addEventListener('click', loadLeadTimeData);
+    }
+    
+    // Change Failure Rate event listeners
+    const changefailureTimeRange = document.getElementById('changefailureTimeRange');
+    const refreshChangeFailureBtn = document.getElementById('refreshChangeFailureBtn');
+    if (changefailureTimeRange) {
+        changefailureTimeRange.addEventListener('change', loadChangeFailureData);
+    }
+    if (refreshChangeFailureBtn) {
+        refreshChangeFailureBtn.addEventListener('click', loadChangeFailureData);
+    }
 }
 
-// 加载Pipeline列表
+// Load pipeline list
 async function loadPipelines() {
     try {
         const response = await fetch('/api/pipelines');
@@ -92,16 +129,16 @@ async function loadPipelines() {
                 if (index === 0) option.selected = true;
                 pipelineSelect.appendChild(option);
             });
-            // 加载完pipeline列表后再加载数据
+            // Load data after loading pipeline list
             loadData();
         }
     } catch (error) {
         console.error('Error loading pipelines:', error);
-        showError('无法加载Pipeline列表: ' + error.message);
+        showError('Unable to load Pipeline list: ' + error.message);
     }
 }
 
-// 加载数据
+// Load data
 async function loadData() {
     try {
         showLoading(true);
@@ -118,7 +155,7 @@ async function loadData() {
         const result = await response.json();
         
         if (!result.success) {
-            throw new Error(result.error || '获取数据失败');
+            throw new Error(result.error || 'Failed to fetch data');
         }
         
         currentData = result.data;
@@ -134,7 +171,7 @@ async function loadData() {
     }
 }
 
-// 更新统计信息
+// Update statistics
 function updateStatistics(stats) {
     totalRunsEl.textContent = stats.totalRuns;
     successRunsEl.textContent = stats.successCount;
@@ -143,14 +180,14 @@ function updateStatistics(stats) {
     deployFrequencyEl.textContent = stats.deployFrequency;
 }
 
-// 更新图表
+// Update chart
 function updateChart() {
     if (!currentData) return;
     
     const chartType = chartTypeSelect.value;
     const ctx = document.getElementById('mainChart').getContext('2d');
     
-    // 销毁现有图表
+    // Destroy existing chart
     if (currentChart) {
         currentChart.destroy();
     }
@@ -174,7 +211,7 @@ function updateChart() {
     currentChart = new Chart(ctx, chartConfig);
 }
 
-// 创建按日统计图表
+// Create daily chart
 function createDailyChart(dailyStats) {
     const sortedDates = Object.keys(dailyStats).sort((a, b) => new Date(a) - new Date(b));
     const labels = sortedDates.map(date => formatDate(new Date(date)));
@@ -187,14 +224,14 @@ function createDailyChart(dailyStats) {
             labels: labels,
             datasets: [
                 {
-                    label: '成功',
+                    label: 'Success',
                     data: successData,
                     backgroundColor: 'rgba(40, 167, 69, 0.7)',
                     borderColor: 'rgba(40, 167, 69, 1)',
                     borderWidth: 2
                 },
                 {
-                    label: '失败',
+                    label: 'Failed',
                     data: failureData,
                     backgroundColor: 'rgba(220, 53, 69, 0.7)',
                     borderColor: 'rgba(220, 53, 69, 1)',
@@ -208,7 +245,7 @@ function createDailyChart(dailyStats) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Pipeline运行次数 - 按日统计',
+                    text: 'Pipeline Runs - Daily Statistics',
                     font: {
                         size: 16,
                         weight: 'bold'
@@ -236,7 +273,7 @@ function createDailyChart(dailyStats) {
     };
 }
 
-// 创建按小时统计图表
+// Create hourly chart
 function createHourlyChart(hourlyStats) {
     const hours = Array.from({length: 24}, (_, i) => i);
     const labels = hours.map(hour => `${hour}:00`);
@@ -250,7 +287,7 @@ function createHourlyChart(hourlyStats) {
             labels: labels,
             datasets: [
                 {
-                    label: '总计',
+                    label: 'Total',
                     data: totalData,
                     borderColor: 'rgba(102, 126, 234, 1)',
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -258,14 +295,14 @@ function createHourlyChart(hourlyStats) {
                     fill: true
                 },
                 {
-                    label: '成功',
+                    label: 'Success',
                     data: successData,
                     borderColor: 'rgba(40, 167, 69, 1)',
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
                     tension: 0.4
                 },
                 {
-                    label: '失败',
+                    label: 'Failed',
                     data: failureData,
                     borderColor: 'rgba(220, 53, 69, 1)',
                     backgroundColor: 'rgba(220, 53, 69, 0.1)',
@@ -279,7 +316,7 @@ function createHourlyChart(hourlyStats) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Pipeline运行分布 - 按小时统计',
+                    text: 'Pipeline Run Distribution - Hourly Statistics',
                     font: {
                         size: 16,
                         weight: 'bold'
@@ -301,12 +338,12 @@ function createHourlyChart(hourlyStats) {
     };
 }
 
-// 创建成功率分析图表
+// Create success rate chart
 function createSuccessRateChart(stats) {
     return {
         type: 'doughnut',
         data: {
-            labels: ['成功', '失败'],
+            labels: ['Success', 'Failed'],
             datasets: [{
                 data: [stats.successCount, stats.failureCount],
                 backgroundColor: [
@@ -326,7 +363,7 @@ function createSuccessRateChart(stats) {
             plugins: {
                 title: {
                     display: true,
-                    text: `Pipeline成功率分析 (${stats.successRate}%)`,
+                    text: `Pipeline Success Rate Analysis (${stats.successRate}%)`,
                     font: {
                         size: 16,
                         weight: 'bold'
@@ -340,12 +377,12 @@ function createSuccessRateChart(stats) {
     };
 }
 
-// 更新运行记录表格
+// Update runs table
 function updateRunsTable(runs) {
     const tbody = document.querySelector('#runsTable tbody');
     tbody.innerHTML = '';
     
-    runs.slice(0, 20).forEach(run => { // 只显示最近20条记录
+    runs.slice(0, 20).forEach(run => { // Only show recent 20 records
         const row = document.createElement('tr');
         
         const duration = calculateDuration(run.createdDate, run.finishedDate);
@@ -364,7 +401,7 @@ function updateRunsTable(runs) {
     });
 }
 
-// 工具函数
+// Utility functions
 function formatDate(date) {
     return date.toLocaleDateString('zh-CN', {
         month: 'short',
@@ -384,21 +421,21 @@ function formatDateTime(date) {
 
 function getStatusText(state) {
     const statusMap = {
-        'completed': '已完成',
-        'running': '运行中',
-        'pending': '等待中',
-        'cancelling': '取消中',
-        'cancelled': '已取消'
+        'completed': 'Completed',
+        'running': 'Running',
+        'pending': 'Pending',
+        'cancelling': 'Cancelling',
+        'cancelled': 'Cancelled'
     };
     return statusMap[state] || state;
 }
 
 function getResultText(result) {
     const resultMap = {
-        'succeeded': '成功',
-        'failed': '失败',
-        'canceled': '已取消',
-        'none': '无结果'
+        'succeeded': 'Succeeded',
+        'failed': 'Failed',
+        'canceled': 'Cancelled',
+        'none': 'No Result'
     };
     return resultMap[result] || result;
 }
@@ -414,9 +451,9 @@ function calculateDuration(startDate, endDate) {
     const seconds = Math.floor((diff % 60000) / 1000);
     
     if (minutes > 0) {
-        return `${minutes}分 ${seconds}秒`;
+        return `${minutes}m ${seconds}s`;
     } else {
-        return `${seconds}秒`;
+        return `${seconds}s`;
     }
 }
 
@@ -433,7 +470,7 @@ function hideError() {
     errorMessage.style.display = 'none';
 }
 
-// 加载 Code Coverage 数据
+// Load code coverage data
 async function loadCoverageData() {
     try {
         showLoading(true);
@@ -443,25 +480,25 @@ async function loadCoverageData() {
         const result = await response.json();
         
         if (!result.success) {
-            throw new Error(result.error || '获取 Coverage 数据失败');
+            throw new Error(result.error || 'Failed to fetch coverage data');
         }
         
         updateCoverageCards(result.data);
     } catch (error) {
         console.error('Error loading coverage data:', error);
-        showError('加载 Coverage 数据失败: ' + error.message);
+        showError('Failed to load coverage data: ' + error.message);
     } finally {
         showLoading(false);
     }
 }
 
-// 更新 Coverage 卡片
+// Update coverage cards
 function updateCoverageCards(data) {
     const container = document.getElementById('coverageCards');
     container.innerHTML = '';
     
     if (!data || data.length === 0) {
-        container.innerHTML = '<div class="no-data">暂无 Unit Test Pipeline 配置</div>';
+        container.innerHTML = '<div class="no-data">No Unit Test Pipeline configured</div>';
         return;
     }
     
@@ -534,9 +571,433 @@ function updateCoverageCards(data) {
     });
 }
 
-// 获取覆盖率等级样式
+// Get coverage class
 function getCoverageClass(percentage) {
     if (percentage >= 80) return 'high';
     if (percentage >= 60) return 'medium';
     return 'low';
+}
+
+// Load Lead Time for Changes data
+let currentLeadTimeChart = null;
+let availableRepositories = [];
+
+async function loadLeadTimeData() {
+    try {
+        showLoading(true);
+        hideError();
+        
+        // First get configuration
+        const configResponse = await fetch('/api/config');
+        const configResult = await configResponse.json();
+        
+        console.log('Config result:', configResult);
+        
+        if (!configResult.success) {
+            throw new Error('Unable to get configuration');
+        }
+        
+        availableRepositories = configResult.data.repositories || [];
+        
+        if (availableRepositories.length === 0) {
+            throw new Error('Repository ID not configured, please set REPOSITORY_ID in .env file');
+        }
+        
+        // Update repository selector
+        updateRepositorySelector();
+        
+        // Get currently selected repository
+        const selectedRepoId = document.getElementById('leadtimeRepository')?.value || availableRepositories[0].id;
+        const selectedRepo = availableRepositories.find(r => r.id === selectedRepoId) || availableRepositories[0];
+        
+        const days = document.getElementById('leadtimeTimeRange').value;
+        const response = await fetch(`/api/lead-time?days=${days}&repositoryId=${encodeURIComponent(selectedRepo.id + ':' + selectedRepo.name)}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to fetch Lead Time data');
+        }
+        
+        updateLeadTimeStatistics(result.data.statistics);
+        updateLeadTimeChart(result.data.dailyStats, result.data.cycles);
+        updateLeadTimeCycles(result.data.cycles);
+    } catch (error) {
+        console.error('Error loading lead time data:', error);
+        showError('Failed to load Lead Time data: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Update repository selector
+function updateRepositorySelector() {
+    let selector = document.getElementById('leadtimeRepository');
+    
+    // If selector doesn't exist, create it
+    if (!selector) {
+        const controlsDiv = document.querySelector('.leadtime-controls');
+        if (controlsDiv) {
+            const selectorHTML = `
+                <div class="control-group">
+                    <label for="leadtimeRepository">Repository:</label>
+                    <select id="leadtimeRepository" onchange="loadLeadTimeData()">
+                    </select>
+                </div>
+            `;
+            controlsDiv.insertAdjacentHTML('afterbegin', selectorHTML);
+            selector = document.getElementById('leadtimeRepository');
+        }
+    }
+    
+    if (selector && availableRepositories.length > 0) {
+        const currentValue = selector.value;
+        selector.innerHTML = availableRepositories.map(repo => 
+            `<option value="${repo.id}">${repo.name}</option>`
+        ).join('');
+        
+        // Restore previous selection
+        if (currentValue && availableRepositories.find(r => r.id === currentValue)) {
+            selector.value = currentValue;
+        }
+    }
+}
+
+// Update Lead Time statistics
+function updateLeadTimeStatistics(stats) {
+    document.getElementById('totalPRs').textContent = stats.totalCycles;
+    document.getElementById('avgLeadTime').textContent = `${stats.avgLeadTimeHours}h (${stats.avgLeadTimeDays}d)`;
+    document.getElementById('medianLeadTime').textContent = `${stats.medianLeadTimeHours}h`;
+    document.getElementById('minLeadTime').textContent = `${stats.minLeadTimeHours}h`;
+    document.getElementById('maxLeadTime').textContent = `${stats.maxLeadTimeHours}h`;
+}
+
+// Update Lead Time chart
+function updateLeadTimeChart(dailyStats, cycles) {
+    const ctx = document.getElementById('leadtimeChart').getContext('2d');
+    
+    if (currentLeadTimeChart) {
+        currentLeadTimeChart.destroy();
+    }
+    
+    // Use cycle data instead of aggregating by date
+    const labels = cycles.map((cycle, idx) => `Cycle ${cycle.cycleNumber}`);
+    const leadTimes = cycles.map(cycle => cycle.leadTimeHours);
+    
+    // Set different colors for different lead times
+    // Green: < 1 week (168 hours)
+    // Yellow: 1 week - 1 month (168-720 hours)
+    // Red: > 1 month (>720 hours)
+    const backgroundColors = leadTimes.map(hours => {
+        if (hours < 168) return 'rgba(40, 167, 69, 0.6)';  // Green: <1 week
+        if (hours < 720) return 'rgba(255, 193, 7, 0.6)';  // Yellow: 1 week-1 month
+        return 'rgba(220, 53, 69, 0.6)';                    // Red: >1 month
+    });
+    
+    const borderColors = leadTimes.map(hours => {
+        if (hours < 168) return 'rgba(40, 167, 69, 1)';
+        if (hours < 720) return 'rgba(255, 193, 7, 1)';
+        return 'rgba(220, 53, 69, 1)';
+    });
+    
+    currentLeadTimeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Lead Time (hours)',
+                    data: leadTimes,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Lead Time for Changes - Cycle Details',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const cycle = cycles[context.dataIndex];
+                            return [
+                                `Lead Time: ${cycle.leadTimeDays} days`,
+                                `PRs in Cycle: ${cycle.totalPRsInCycle}`,
+                                `Start: ${new Date(cycle.startPR.closedDate).toLocaleDateString()}`,
+                                `End: ${new Date(cycle.endPR.closedDate).toLocaleDateString()}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Lead Time (hours)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + 'h';
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update Lead Time table (show cycles)
+function updateLeadTimeCycles(cycles) {
+    const tbody = document.querySelector('#leadtimeTable tbody');
+    tbody.innerHTML = '';
+    
+    cycles.slice(0, 50).forEach(cycle => {
+        const row = document.createElement('tr');
+        
+        // Add style class based on Lead Time
+        // Green: < 1 week (168 hours)
+        // Yellow: 1 week - 1 month (168-720 hours)
+        // Red: > 1 month (>720 hours)
+        let leadTimeClass = '';
+        if (cycle.leadTimeHours < 168) {
+            leadTimeClass = 'leadtime-fast';
+        } else if (cycle.leadTimeHours < 720) {
+            leadTimeClass = 'leadtime-medium';
+        } else {
+            leadTimeClass = 'leadtime-slow';
+        }
+        
+        row.className = leadTimeClass;
+        
+        row.innerHTML = `
+            <td>Cycle #${cycle.cycleNumber}</td>
+            <td title="${cycle.startPR.title}">${cycle.startPR.title.length > 30 ? cycle.startPR.title.substring(0, 30) + '...' : cycle.startPR.title}</td>
+            <td>${formatDateTime(new Date(cycle.startPR.closedDate))}</td>
+            <td title="${cycle.endPR.title}">${cycle.endPR.title.length > 30 ? cycle.endPR.title.substring(0, 30) + '...' : cycle.endPR.title}</td>
+            <td>${formatDateTime(new Date(cycle.endPR.closedDate))}</td>
+            <td><strong>${cycle.leadTimeHours}h</strong></td>
+            <td>${cycle.leadTimeDays}d</td>
+            <td>${cycle.totalPRsInCycle}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Keep old updateLeadTimeTable function for compatibility
+function updateLeadTimeTable(pullRequests) {
+    const tbody = document.querySelector('#leadtimeTable tbody');
+    tbody.innerHTML = '';
+    
+    pullRequests.slice(0, 50).forEach(pr => {
+        const row = document.createElement('tr');
+        
+        // Add style class based on Lead Time
+        // Green: < 1 week (168 hours)
+        // Yellow: 1 week - 1 month (168-720 hours)
+        // Red: > 1 month (>720 hours)
+        let leadTimeClass = '';
+        if (pr.leadTimeHours < 168) {
+            leadTimeClass = 'leadtime-fast';
+        } else if (pr.leadTimeHours < 720) {
+            leadTimeClass = 'leadtime-medium';
+        } else {
+            leadTimeClass = 'leadtime-slow';
+        }
+        
+        row.className = leadTimeClass;
+        
+        row.innerHTML = `
+            <td>${pr.id}</td>
+            <td title="${pr.title}">${pr.title.length > 50 ? pr.title.substring(0, 50) + '...' : pr.title}</td>
+            <td>${pr.createdBy}</td>
+            <td>${formatDateTime(new Date(pr.createdDate))}</td>
+            <td>${formatDateTime(new Date(pr.closedDate))}</td>
+            <td><strong>${pr.leadTimeHours}</strong></td>
+            <td>${pr.leadTimeDays}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Load Change Failure Rate data
+let currentChangeFailureChart = null;
+
+async function loadChangeFailureData() {
+    try {
+        showLoading(true);
+        hideError();
+        
+        const days = document.getElementById('changefailureTimeRange').value;
+        const response = await fetch(`/api/change-failure-rate?days=${days}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to fetch Change Failure Rate data');
+        }
+        
+        updateChangeFailureStatistics(result.data.statistics);
+        updateChangeFailureChart(result.data.bugsBySeverity, result.data.statistics);
+        updateBugsTable(result.data.bugs);
+    } catch (error) {
+        console.error('Error loading change failure rate data:', error);
+        showError('Failed to load Change Failure Rate data: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Update Change Failure Rate statistics
+function updateChangeFailureStatistics(stats) {
+    document.getElementById('totalBugs').textContent = stats.totalBugs;
+    document.getElementById('totalDeployments').textContent = stats.totalDeployments;
+    document.getElementById('changeFailureRate').textContent = `${stats.changeFailureRate}%`;
+    document.getElementById('cfrPeriod').textContent = stats.period;
+}
+
+// Update Change Failure Rate chart
+function updateChangeFailureChart(bugsBySeverity, stats) {
+    const ctx = document.getElementById('changefailureChart').getContext('2d');
+    
+    if (currentChangeFailureChart) {
+        currentChangeFailureChart.destroy();
+    }
+    
+    // Prepare severity data
+    const severities = ['1 - Critical', '2 - High', '3 - Medium', '4 - Low'];
+    const severityCounts = severities.map(severity => {
+        return bugsBySeverity[severity] ? bugsBySeverity[severity].length : 0;
+    });
+    
+    const severityColors = [
+        'rgba(220, 53, 69, 0.7)',   // Critical - Red
+        'rgba(255, 193, 7, 0.7)',   // High - Yellow
+        'rgba(102, 126, 234, 0.7)', // Medium - Blue
+        'rgba(40, 167, 69, 0.7)'    // Low - Green
+    ];
+    
+    const borderColors = [
+        'rgba(220, 53, 69, 1)',
+        'rgba(255, 193, 7, 1)',
+        'rgba(102, 126, 234, 1)',
+        'rgba(40, 167, 69, 1)'
+    ];
+    
+    currentChangeFailureChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: severities,
+            datasets: [
+                {
+                    label: 'Bugs Count',
+                    data: severityCounts,
+                    backgroundColor: severityColors,
+                    borderColor: borderColors,
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Change Failure Rate: ${stats.changeFailureRate}% (${stats.totalBugs} bugs / ${stats.totalDeployments} deployments)`,
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Bugs'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Bug Severity'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update bugs table
+function updateBugsTable(bugs) {
+    const tbody = document.querySelector('#bugsTable tbody');
+    tbody.innerHTML = '';
+    
+    if (bugs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No environment change failure bugs found in this period</td></tr>';
+        return;
+    }
+    
+    bugs.forEach(bug => {
+        const row = document.createElement('tr');
+        
+        // Add severity class
+        let severityClass = '';
+        if (bug.severity.includes('1 - Critical')) {
+            severityClass = 'severity-critical';
+        } else if (bug.severity.includes('2 - High')) {
+            severityClass = 'severity-high';
+        } else if (bug.severity.includes('3 - Medium')) {
+            severityClass = 'severity-medium';
+        } else {
+            severityClass = 'severity-low';
+        }
+        
+        row.className = severityClass;
+        
+        row.innerHTML = `
+            <td><strong>#${bug.id}</strong></td>
+            <td title="${bug.title}">${bug.title.length > 60 ? bug.title.substring(0, 60) + '...' : bug.title}</td>
+            <td><span class="severity-badge ${severityClass}">${bug.severity}</span></td>
+            <td><span class="state-badge state-${bug.state.toLowerCase()}">${bug.state}</span></td>
+            <td>${bug.assignedTo}</td>
+            <td>${formatDateTime(new Date(bug.createdDate))}</td>
+            <td>${bug.tags}</td>
+            <td><a href="${bug.url}" target="_blank" class="view-link">View →</a></td>
+        `;
+        
+        tbody.appendChild(row);
+    });
 }

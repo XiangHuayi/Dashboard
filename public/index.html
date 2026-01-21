@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,58 +10,60 @@
 </head>
 <body>
     <div class="container">
-        <!-- 头部 -->
+        <!-- Header -->
         <header class="header">
             <h1>🚀 OBOPS SESAM Dashboard</h1>
         </header>
 
-        <!-- 导航栏 -->
+        <!-- Navigation -->
         <nav class="navigation">
-            <button class="nav-btn active" data-view="statistics">📊 Deployment Frequency 统计分析</button>
+            <button class="nav-btn active" data-view="statistics">📊 Deployment Frequency Statistics</button>
+            <button class="nav-btn" data-view="leadtime">⏱️ Lead Time for Changes</button>
             <button class="nav-btn" data-view="coverage">🧪 Code Coverage</button>
+            <button class="nav-btn" data-view="changefailure">🐛 Change Failure Rate</button>
         </nav>
 
-        <!-- 统计数据视图 -->
+        <!-- Statistics View -->
         <div id="statisticsView" class="view-container active">
-            <!-- 控制面板 -->
+            <!-- Control Panel -->
             <div class="controls">
             <div class="control-group">
-                <label for="pipelineSelect">选择Pipeline:</label>
+                <label for="pipelineSelect">Select Pipeline:</label>
                 <select id="pipelineSelect">
-                    <option value="">加载中...</option>
+                    <option value="">Loading...</option>
                 </select>
             </div>
             
             <div class="control-group">
-                <label for="timeRange">时间范围:</label>
+                <label for="timeRange">Time Range:</label>
                 <select id="timeRange">
-                    <option value="7">过去7天</option>
-                    <option value="15">过去15天</option>
-                    <option value="30" selected>过去30天</option>
-                    <option value="60">过去60天</option>
-                    <option value="90">过去90天</option>
+                    <option value="7">Last 7 days</option>
+                    <option value="15">Last 15 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="60">Last 60 days</option>
+                    <option value="90">Last 90 days</option>
                 </select>
             </div>
             
             <div class="control-group">
-                <label for="chartType">图表类型:</label>
+                <label for="chartType">Chart Type:</label>
                 <select id="chartType">
-                    <option value="daily">按日统计</option>
-                    <option value="hourly">按小时统计</option>
-                    <option value="success-rate">成功率分析</option>
+                    <option value="daily">Daily Statistics</option>
+                    <option value="hourly">Hourly Statistics</option>
+                    <option value="success-rate">Success Rate Analysis</option>
                 </select>
             </div>
 
-            <button id="refreshBtn" class="refresh-btn">🔄 刷新数据</button>
+            <button id="refreshBtn" class="refresh-btn">🔄 Refresh Data</button>
         </div>
 
-        <!-- 统计卡片 -->
+        <!-- Statistics Cards -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon">📊</div>
                 <div class="stat-content">
                     <h3 id="totalRuns">-</h3>
-                    <p>总运行次数</p>
+                    <p>Total Runs</p>
                 </div>
             </div>
             
@@ -69,7 +71,7 @@
                 <div class="stat-icon">✅</div>
                 <div class="stat-content">
                     <h3 id="successRuns">-</h3>
-                    <p>成功次数</p>
+                    <p>Successful Runs</p>
                 </div>
             </div>
             
@@ -77,7 +79,7 @@
                 <div class="stat-icon">❌</div>
                 <div class="stat-content">
                     <h3 id="failureRuns">-</h3>
-                    <p>失败次数</p>
+                    <p>Failed Runs</p>
                 </div>
             </div>
             
@@ -85,7 +87,7 @@
                 <div class="stat-icon">📈</div>
                 <div class="stat-content">
                     <h3 id="successRate">-</h3>
-                    <p>成功率</p>
+                    <p>Success Rate</p>
                 </div>
             </div>
             
@@ -93,30 +95,30 @@
                 <div class="stat-icon">⚡</div>
                 <div class="stat-content">
                     <h3 id="deployFrequency">-</h3>
-                    <p>部署频率 (次/天)</p>
+                    <p>Deploy Frequency (per day)</p>
                 </div>
             </div>
         </div>
 
-        <!-- 主图表区域 -->
+        <!-- Main Chart Area -->
         <div class="chart-container">
             <canvas id="mainChart"></canvas>
         </div>
 
-        <!-- 详细信息区域 -->
+        <!-- Details Section -->
         <div class="details-section">
-            <h2>最近运行记录</h2>
+            <h2>Recent Runs</h2>
             <div class="table-container">
                 <table id="runsTable">
                     <thead>
                         <tr>
-                            <th>运行ID</th>
-                            <th>名称</th>
-                            <th>状态</th>
-                            <th>结果</th>
-                            <th>开始时间</th>
-                            <th>完成时间</th>
-                            <th>持续时间</th>
+                            <th>Run ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Result</th>
+                            <th>Start Time</th>
+                            <th>Finish Time</th>
+                            <th>Duration</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -125,28 +127,194 @@
         </div>
         </div>
 
-        <!-- Code Coverage 视图 -->
+        <!-- Code Coverage View -->
         <div id="coverageView" class="view-container">
             <div class="coverage-header">
                 <h2>🧪 Unit Test Code Coverage</h2>
-                <button id="refreshCoverageBtn" class="refresh-btn">🔄 刷新</button>
+                <button id="refreshCoverageBtn" class="refresh-btn">🔄 Refresh</button>
             </div>
             <div id="coverageCards" class="coverage-grid">
-                <!-- 动态生成的 coverage 卡片 -->
+                <!-- Dynamically generated coverage cards -->
             </div>
         </div>
 
-        <!-- 加载指示器 -->
-        <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <p>加载数据中...</p>
+        <!-- Lead Time for Changes View -->
+        <div id="leadtimeView" class="view-container">
+            <div class="leadtime-header">
+                <h2>⏱️ Lead Time for Changes (DORA Metrics)</h2>
+                <div class="leadtime-controls">
+                    <select id="leadtimeTimeRange">
+                        <option value="7">Last 7 days</option>
+                        <option value="15">Last 15 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="60">Last 60 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                    <button id="refreshLeadtimeBtn" class="refresh-btn">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            <!-- Lead Time Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <h3 id="totalPRs">-</h3>
+                        <p>Deployment Cycles</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-content">
+                        <h3 id="avgLeadTime">-</h3>
+                        <p>Average Lead Time</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card info">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <h3 id="medianLeadTime">-</h3>
+                        <p>Median Lead Time</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <h3 id="minLeadTime">-</h3>
+                        <p>Shortest Lead Time</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card failure">
+                    <div class="stat-icon">🐌</div>
+                    <div class="stat-content">
+                        <h3 id="maxLeadTime">-</h3>
+                        <p>Longest Lead Time</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lead Time Chart -->
+            <div class="chart-container">
+                <canvas id="leadtimeChart"></canvas>
+            </div>
+
+            <!-- PR List -->
+            <div class="details-section">
+                <h2>Pull Request List</h2>
+                <div class="table-container">
+                    <table id="leadtimeTable">
+                        <thead>
+                            <tr>
+                                <th>Cycle</th>
+                                <th>Start Deploy PR</th>
+                                <th>Start Time</th>
+                                <th>End Deploy PR</th>
+                                <th>End Time</th>
+                                <th>Lead Time (hours)</th>
+                                <th>Lead Time (days)</th>
+                                <th>PRs in Period</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <!-- 错误消息 -->
+        <!-- Change Failure Rate View -->
+        <div id="changefailureView" class="view-container">
+            <div class="changefailure-header">
+                <h2>🐛 Change Failure Rate (DORA Metrics)</h2>
+                <div class="changefailure-controls">
+                    <select id="changefailureTimeRange">
+                        <option value="7">Last 7 days</option>
+                        <option value="15">Last 15 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="60">Last 60 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                    <button id="refreshChangeFailureBtn" class="refresh-btn">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            <!-- Change Failure Rate Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card failure">
+                    <div class="stat-icon">🐛</div>
+                    <div class="stat-content">
+                        <h3 id="totalBugs">-</h3>
+                        <p>Total Failure Bugs</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-icon">🚀</div>
+                    <div class="stat-content">
+                        <h3 id="totalDeployments">-</h3>
+                        <p>Total Deployments</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <h3 id="changeFailureRate">-</h3>
+                        <p>Change Failure Rate</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card info">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-content">
+                        <h3 id="cfrPeriod">-</h3>
+                        <p>Analysis Period</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Failure Rate Chart -->
+            <div class="chart-container">
+                <canvas id="changefailureChart"></canvas>
+            </div>
+
+            <!-- Bug Details Section -->
+            <div class="details-section">
+                <h2>Environment Change Failure Bugs</h2>
+                <div class="table-container">
+                    <table id="bugsTable">
+                        <thead>
+                            <tr>
+                                <th>Bug ID</th>
+                                <th>Title</th>
+                                <th>Severity</th>
+                                <th>State</th>
+                                <th>Assigned To</th>
+                                <th>Created Date</th>
+                                <th>Tags</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading data...</p>
+        </div>
+
+        <!-- Error Message -->
         <div id="errorMessage" class="error-message" style="display: none;">
-            <h3>❌ 加载失败</h3>
+            <h3>❌ Load Failed</h3>
             <p id="errorText"></p>
-            <button onclick="loadData()">重试</button>
+            <button onclick="loadData()">Retry</button>
         </div>
     </div>
 
