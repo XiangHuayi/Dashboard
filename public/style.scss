@@ -92,6 +92,51 @@ body {
   }
 }
 
+// 导航栏样式
+.navigation {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: $bg-white;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: $shadow-base;
+  border: 1px solid $border-light;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 12px 24px;
+  background: $bg-light;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: $text-secondary;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: $bg-hover;
+    border-color: $primary-color;
+  }
+  
+  &.active {
+    background: $primary-color;
+    color: white;
+    border-color: $primary-color;
+  }
+}
+
+// 视图容器样式
+.view-container {
+  display: none;
+  
+  &.active {
+    display: block;
+  }
+}
+
 // 控制面板样式
 .controls {
   display: flex;
@@ -438,4 +483,230 @@ body {
     height: 300px;
     padding: 16px;
   }
+  
+  .navigation {
+    flex-direction: column;
+  }
+  
+  .coverage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Code Coverage 视图样式
+.coverage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: $bg-white;
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow: $shadow-base;
+  border: 1px solid $border-light;
+  
+  h2 {
+    font-size: 20px;
+    font-weight: 500;
+    color: $text-primary;
+    margin: 0;
+  }
+}
+
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.coverage-card {
+  background: $bg-white;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: $shadow-base;
+  border: 1px solid $border-light;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: $shadow-hover;
+    transform: translateY(-2px);
+  }
+}
+
+.coverage-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid $border-color;
+  
+  h3 {
+    font-size: 16px;
+    font-weight: 500;
+    color: $text-primary;
+    margin: 0;
+  }
+  
+  .pipeline-id {
+    background: $bg-hover;
+    color: $text-secondary;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+}
+
+.build-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  
+  .build-status {
+    font-size: 13px;
+    font-weight: 500;
+    
+    &.success {
+      color: $success-color;
+    }
+    
+    &.failure {
+      color: $failure-color;
+    }
+  }
+  
+  .build-date {
+    font-size: 12px;
+    color: $text-muted;
+  }
+}
+
+.coverage-display {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.coverage-circle {
+  flex-shrink: 0;
+  
+  .circular-chart {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .circle-bg {
+    fill: none;
+    stroke: $border-color;
+    stroke-width: 2.8;
+  }
+  
+  .circle {
+    fill: none;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    animation: progress 1s ease-out forwards;
+  }
+  
+  &.high .circle {
+    stroke: $success-color;
+  }
+  
+  &.medium .circle {
+    stroke: $warning-color;
+  }
+  
+  &.low .circle {
+    stroke: $failure-color;
+  }
+  
+  .percentage {
+    fill: $text-primary;
+    font-size: 8px;
+    font-weight: bold;
+    text-anchor: middle;
+  }
+}
+
+@keyframes progress {
+  0% {
+    stroke-dasharray: 0 100;
+  }
+}
+
+.coverage-stats {
+  flex: 1;
+  
+  .coverage-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: $text-secondary;
+    margin-bottom: 4px;
+  }
+  
+  .coverage-numbers {
+    font-size: 18px;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+  }
+}
+
+.coverage-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-link {
+  display: block;
+  padding: 8px 12px;
+  background: $bg-light;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+  text-decoration: none;
+  color: $text-primary;
+  font-size: 13px;
+  text-align: center;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: $primary-color;
+    color: white;
+    border-color: $primary-color;
+  }
+  
+  &.coverage-link:hover {
+    background: $success-color;
+    border-color: $success-color;
+  }
+  
+  &.tests-link:hover {
+    background: $info-color;
+    border-color: $info-color;
+  }
+}
+
+.error-info {
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  color: #856404;
+  text-align: center;
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: $text-muted;
+  font-size: 16px;
 }
