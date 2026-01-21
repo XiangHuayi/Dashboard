@@ -403,14 +403,14 @@ function updateRunsTable(runs) {
 
 // Utility functions
 function formatDate(date) {
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric'
     });
 }
 
 function formatDateTime(date) {
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString('en-US', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',

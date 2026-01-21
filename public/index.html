@@ -131,7 +131,9 @@
         <div id="coverageView" class="view-container">
             <div class="coverage-header">
                 <h2>🧪 Unit Test Code Coverage</h2>
-                <button id="refreshCoverageBtn" class="refresh-btn">🔄 Refresh</button>
+                <div class="coverage-controls">
+                    <button id="refreshCoverageBtn" class="refresh-btn">🔄 Refresh</button>
+                </div>
             </div>
             <div id="coverageCards" class="coverage-grid">
                 <!-- Dynamically generated coverage cards -->
@@ -143,13 +145,16 @@
             <div class="leadtime-header">
                 <h2>⏱️ Lead Time for Changes (DORA Metrics)</h2>
                 <div class="leadtime-controls">
-                    <select id="leadtimeTimeRange">
-                        <option value="7">Last 7 days</option>
-                        <option value="15">Last 15 days</option>
-                        <option value="30" selected>Last 30 days</option>
-                        <option value="60">Last 60 days</option>
-                        <option value="90">Last 90 days</option>
-                    </select>
+                    <div class="control-group">
+                        <label for="leadtimeTimeRange">Time Range:</label>
+                        <select id="leadtimeTimeRange">
+                            <option value="7">Last 7 days</option>
+                            <option value="15">Last 15 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                    </div>
                     <button id="refreshLeadtimeBtn" class="refresh-btn">🔄 Refresh</button>
                 </div>
             </div>
@@ -230,13 +235,16 @@
             <div class="changefailure-header">
                 <h2>🐛 Change Failure Rate (DORA Metrics)</h2>
                 <div class="changefailure-controls">
-                    <select id="changefailureTimeRange">
-                        <option value="7">Last 7 days</option>
-                        <option value="15">Last 15 days</option>
-                        <option value="30" selected>Last 30 days</option>
-                        <option value="60">Last 60 days</option>
-                        <option value="90">Last 90 days</option>
-                    </select>
+                    <div class="control-group">
+                        <label for="changefailureTimeRange">Time Range:</label>
+                        <select id="changefailureTimeRange">
+                            <option value="7">Last 7 days</option>
+                            <option value="15">Last 15 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                    </div>
                     <button id="refreshChangeFailureBtn" class="refresh-btn">🔄 Refresh</button>
                 </div>
             </div>
